@@ -4,11 +4,23 @@ from datetime import timedelta
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
+def _normalize_db_url(url):
+    """Clean the URL and make sure SQLAlchemy uses the psycopg 3 driver."""
+    url = (url or "").strip().strip('"').strip("'")
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
+_LOCAL_DB = "postgresql+psycopg://tawati_user:tawati_pass@localhost:5432/tawati_chemist"
+
+
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-prod")
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL",
-        "postgresql+psycopg://tawati_user:tawati_pass@localhost:5432/tawati_chemist",
+    SQLALCHEMY_DATABASE_URI = (
+        _normalize_db_url(os.environ.get("DATABASE_URL")) or _LOCAL_DB
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
