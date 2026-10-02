@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children, ownerOnly = false }) {
   const { user, loading, isOwner } = useAuth();
 
   if (loading) return <div className="page-loading">Loading…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (ownerOnly && !isOwner) return <Navigate to="/dashboard" replace />;
 
   return children;

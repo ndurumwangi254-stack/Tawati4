@@ -35,3 +35,28 @@ def me():
     if not user:
         return jsonify(error="User not found"), 404
     return jsonify(user=user.to_dict())
+
+@auth_bp.post("/change-password")
+@jwt_required()
+def change_password():
+    """Any logged-in user (owner or dispenser) can change their own
+    password — they just have to prove they know the current one first."""
+    user = User.query.get(get_jwt_identity())
+    if not user:
+        return jsonify(error="User not found"), 404
+
+    payload = request.get_json(silent=True) or {}
+    current_password = payload.get("current_password", "")
+    new_password = payload.get("new_password", "")
+
+    if not user.check_password(current_password):
+        return jsonify(error="Current password is incorrect"), 400
+    if len(new_password) < 8:
+        return jsonify(error="New password must be at least 8 characters"), 400
+    if new_password == current_password:
+        return jsonify(error="New password must be different from the current one"), 400
+
+    user.set_password(new_password)
+    user.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify(message="Password updated successfully")
