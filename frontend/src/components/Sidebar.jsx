@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 const OWNER_ONLY_ITEMS = new Set(["/reports", "/audit-log", "/users"]);
 
@@ -17,6 +19,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const { user, isOwner, logout } = useAuth();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.to === "/wholesale") return isOwner;
@@ -49,10 +52,17 @@ export default function Sidebar() {
       <div className="sidebar-user">
         <div className="user-name">{user?.name}</div>
         <div className="user-role">{isOwner ? "Owner" : "Dispenser"}</div>
+        <button className="btn-link" onClick={() => setShowChangePassword(true)}>
+          Change Password
+        </button>
         <button className="btn-link" onClick={logout}>
           Sign out
         </button>
       </div>
+
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </aside>
   );
 }
