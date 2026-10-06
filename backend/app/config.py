@@ -29,6 +29,10 @@ class BaseConfig:
     JWT_TOKEN_LOCATION = ["headers"]
 
     # Business rules baked into config so they're easy to tune
+        # Comma-separated list of origins allowed to call this API. Defaults to
+    # local dev only — set CORS_ORIGINS in your host's env vars to your real
+    # deployed frontend URL(s), e.g. "https://tawati4-frontend.onrender.com"
+    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
     CURRENCY = "KES"
     PHARMACY_NAME = "Tawati Chemist"
     PPB_LICENSE_NO = os.environ.get("PPB_LICENSE_NO", "PPB/RET/2024-884")
