@@ -15,7 +15,7 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True, origins=app.config["CORS_ORIGINS"])
 
     # --- blueprints ---
     from app.routes.auth import auth_bp
