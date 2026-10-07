@@ -134,6 +134,7 @@ export default function Pos() {
       const res = await api.post("/sales", {
         patient_id: patientId || null,
         prescription_ref: prescriptionRef || null,
+        days_of_supply: daysOfSupply ? Number(daysOfSupply) : null,
         discount_id: discountId || null,
         payment_method: paymentMethod,
         amount_paid: paymentMethod === "cash" ? Number(amountReceived) : total,
