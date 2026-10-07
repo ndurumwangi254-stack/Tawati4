@@ -399,9 +399,19 @@ export default function Pos() {
                   <input placeholder="Walk-in Customer" value={walkInName} onChange={(e) => setWalkInName(e.target.value)} />
                 </label>
               )}
-              <label>
+                            <label>
                 Prescription Ref # (optional)
                 <input value={prescriptionRef} onChange={(e) => setPrescriptionRef(e.target.value)} />
+              </label>
+              <label>
+                Days of Supply (optional — sets a refill-due date)
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 30"
+                  value={daysOfSupply}
+                  onChange={(e) => setDaysOfSupply(e.target.value)}
+                />
               </label>
               <label>
                 Discount
