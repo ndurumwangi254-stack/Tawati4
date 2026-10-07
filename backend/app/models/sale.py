@@ -24,6 +24,12 @@ class Sale(db.Model):
     prescription_ref = db.Column(db.String(40))
     discount_id = db.Column(db.String(36), db.ForeignKey("discounts.id"), nullable=True)
 
+    # Optional refill tracking for prescription sales — the dispenser can
+    # enter how many days' supply was given, and the refill-due date is
+    # calculated from that. Both stay null for ordinary OTC/walk-in sales.
+    days_of_supply = db.Column(db.Integer, nullable=True)
+    refill_due_date = db.Column(db.Date, nullable=True)
+
     subtotal = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     discount_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     tax_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
@@ -59,6 +65,8 @@ class Sale(db.Model):
                 else (self.patient.full_name if self.patient else "Walk-in Customer")
             ),
             "prescription_ref": self.prescription_ref,
+            "days_of_supply": self.days_of_supply,
+            "refill_due_date": self.refill_due_date.isoformat() if self.refill_due_date else None,
             "payment_method": self.payment_method,
             "items_count": sum(i.quantity for i in self.items),
             "subtotal": float(self.subtotal),
