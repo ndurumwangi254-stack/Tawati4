@@ -21,6 +21,7 @@ export default function Pos() {
   const [patientId, setPatientId] = useState("");
   const [walkInName, setWalkInName] = useState("");
   const [prescriptionRef, setPrescriptionRef] = useState("");
+  const [daysOfSupply, setDaysOfSupply] = useState("");
   const [discountId, setDiscountId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [amountReceived, setAmountReceived] = useState("");
