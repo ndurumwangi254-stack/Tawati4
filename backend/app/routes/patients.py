@@ -57,6 +57,35 @@ def get_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     return jsonify(patient=patient.to_dict(include_stats=_patient_stats(patient.id)))
 
+@patients_bp.get("/<patient_id>/history")
+@jwt_required()
+def patient_dispensing_history(patient_id):
+    """Date dispensed, drugs dispensed, and refill-due date (if any) for
+    every visit — this is what the Dispenser sees on a patient's record."""
+    Patient.query.get_or_404(patient_id)  # 404 if the patient doesn't exist
+    sales = (
+        Sale.query.filter_by(patient_id=patient_id)
+        .order_by(Sale.created_at.desc())
+        .all()
+    )
+    history = [
+        {
+            "sale_id": s.id,
+            "receipt_number": s.receipt_number,
+            "date_dispensed": s.created_at.isoformat() if s.created_at else None,
+            "dispensed_by": s.dispenser.name if s.dispenser else None,
+            "drugs_dispensed": [
+                {"name": i.product.name if i.product else "Unknown", "quantity": i.quantity}
+                for i in s.items
+            ],
+            "prescription_ref": s.prescription_ref,
+            "days_of_supply": s.days_of_supply,
+            "refill_due_date": s.refill_due_date.isoformat() if s.refill_due_date else None,
+        }
+        for s in sales
+    ]
+    return jsonify(history=history)
+
 
 @patients_bp.post("")
 @jwt_required()
