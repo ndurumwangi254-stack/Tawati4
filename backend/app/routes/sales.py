@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -44,6 +44,15 @@ def create_sale():
     if payment_method not in ("cash", "mpesa"):
         return jsonify(error="payment_method must be 'cash' or 'mpesa'"), 400
 
+        # Optional refill tracking — only meaningful on a prescription sale.
+    days_of_supply = payload.get("days_of_supply")
+    refill_due_date = None
+    if days_of_supply:
+        try:
+            days_of_supply = int(days_of_supply)
+            refill_due_date = (datetime.utcnow() + timedelta(days=days_of_supply)).date()
+        except (TypeError, ValueError):
+            return jsonify(error="days_of_supply must be a whole number"), 400
     discount = None
     if payload.get("discount_id"):
         discount = Discount.query.filter_by(id=payload["discount_id"], is_active=True).first()
@@ -56,6 +65,8 @@ def create_sale():
         user_id=get_jwt_identity(),
         patient_id=payload.get("patient_id"),
         prescription_ref=payload.get("prescription_ref"),
+        days_of_supply=days_of_supply,
+        refill_due_date=refill_due_date,
         payment_method=payment_method,
     )
     db.session.add(sale)
