@@ -118,6 +118,7 @@ export default function Pos() {
     setPatientId("");
     setWalkInName("");
     setPrescriptionRef("");
+    setDaysOfSupply("");
     setDiscountId("");
     setAmountReceived("");
   };
