@@ -23,6 +23,9 @@ export default function Patients() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [historyFor, setHistoryFor] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = (q) => {
     setLoading(true);
@@ -76,6 +79,27 @@ export default function Patients() {
     }
     setShowForm(false);
     load(search);
+  };
+
+    const openHistory = (p) => {
+    setHistoryFor(p);
+    setHistory([]);
+    setHistoryLoading(true);
+    api
+      .get(`/patients/${p.id}/history`)
+      .then((res) => setHistory(res.data.history))
+      .finally(() => setHistoryLoading(false));
+  };
+
+  // Highlights how urgent a refill is: overdue (red), due within 7 days
+  // (amber), further out (neutral) — makes the list scannable at a glance.
+  const refillBadge = (dateStr) => {
+    if (!dateStr) return null;
+    const due = new Date(dateStr);
+    const daysLeft = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+    if (daysLeft < 0) return <span className="badge badge-danger">Overdue · {formatDate(dateStr)}</span>;
+    if (daysLeft <= 7) return <span className="badge badge-warning">Due soon · {formatDate(dateStr)}</span>;
+    return <span className="badge badge-info">{formatDate(dateStr)}</span>;
   };
 
   const remove = async (p) => {
@@ -167,6 +191,7 @@ export default function Patients() {
                 <td>
                   <div className="action-row">
                     <button className="btn btn-sm">Dispense</button>
+                    <button className="btn btn-sm" onClick={() => openHistory(p)}>History</button>
                     <button className="btn btn-sm" onClick={() => openEdit(p)}>Edit</button>
                     {isOwner && (
                       <button className="btn btn-sm btn-danger" onClick={() => remove(p)}>Delete</button>
@@ -231,7 +256,53 @@ export default function Patients() {
                 <button type="button" className="btn" onClick={() => setShowForm(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Save Patient</button>
               </div>
-            </form>
+                       </form>
+          </div>
+        </div>
+      )}
+
+      {historyFor && (
+        <div className="modal-backdrop" onClick={() => setHistoryFor(null)}>
+          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Dispensing History — {historyFor.full_name}</h2>
+              <button type="button" className="btn-icon" onClick={() => setHistoryFor(null)}>×</button>
+            </div>
+
+            {historyLoading && <p className="cell-sub">Loading…</p>}
+
+            {!historyLoading && history.length === 0 && (
+              <p className="cell-sub">No dispensing records for this patient yet.</p>
+            )}
+
+            {!historyLoading && history.length > 0 && (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date Dispensed</th>
+                    <th>Drugs Dispensed</th>
+                    <th>Dispensed By</th>
+                    <th>Refill Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h) => (
+                    <tr key={h.sale_id}>
+                      <td>{formatDate(h.date_dispensed)}</td>
+                      <td>
+                        {h.drugs_dispensed.map((d) => `${d.name} (${d.quantity})`).join(", ")}
+                      </td>
+                      <td>{h.dispensed_by || "—"}</td>
+                      <td>{refillBadge(h.refill_due_date) || <span className="cell-sub">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div className="modal-footer">
+              <button type="button" className="btn" onClick={() => setHistoryFor(null)}>Close</button>
+            </div>
           </div>
         </div>
       )}
