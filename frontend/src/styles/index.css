@@ -356,6 +356,7 @@ input:focus, select:focus, textarea:focus {
 .badge-ok { background: #d1fae5; color: #065f46; }
 .badge-danger { background: #fee2e2; color: #991b1b; }
 .badge-info { background: #e0e7ff; color: #3730a3; }
+.badge-warning { background: #fef3c7; color: #92400e; }
 .badge-dispensed { background: #dbeafe; color: #1e40af; }
 .badge-restocked { background: #d1fae5; color: #065f46; }
 .badge-adjusted { background: #fef3c7; color: #92400e; }
