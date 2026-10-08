@@ -15,6 +15,7 @@ const BLANK = {
   strength_dosage: "",
   pack_size_volume: "",
   batch_number: "",
+  manufacture_date: "",
   expiry_date: "",
   barcode: "",
   stock_quantity: 0,
@@ -39,6 +40,7 @@ export default function AddItemModal({ onClose, onSaved, product }) {
       ? {
           ...BLANK,
           ...product,
+          manufacture_date: product.manufacture_date ? product.manufacture_date.slice(0, 10) : "",
           expiry_date: product.expiry_date ? product.expiry_date.slice(0, 10) : "",
           cost_price: product.cost_price ?? "",
           selling_price: product.selling_price ?? "",
@@ -189,9 +191,18 @@ export default function AddItemModal({ onClose, onSaved, product }) {
             </>
           )}
 
-          <label>
+                    <label>
             Batch / Lot Number *
             <input value={form.batch_number} onChange={set("batch_number")} required />
+          </label>
+          <label>
+            Date of Manufacture
+            <input
+              type="date"
+              value={form.manufacture_date}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={set("manufacture_date")}
+            />
           </label>
           <label>
             Expiry Date *
