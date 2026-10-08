@@ -34,6 +34,7 @@ class Product(db.Model):
     barcode = db.Column(db.String(64))
     batch_number = db.Column(db.String(64))
     expiry_date = db.Column(db.Date)
+    manufacture_date = db.Column(db.Date)
     stock_quantity = db.Column(db.Integer, nullable=False, default=0)
     min_reorder_level = db.Column(db.Integer, nullable=False, default=0)
 
@@ -92,6 +93,7 @@ class Product(db.Model):
             "barcode": self.barcode,
             "batch_number": self.batch_number,
             "expiry_date": self.expiry_date.isoformat() if self.expiry_date else None,
+            "manufacture_date": self.manufacture_date.isoformat() if self.manufacture_date else None,
             "stock_quantity": self.stock_quantity,
             "min_reorder_level": self.min_reorder_level,
             "selling_price": float(self.selling_price) if self.selling_price is not None else None,
