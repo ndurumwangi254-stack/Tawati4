@@ -18,6 +18,7 @@ const emptyForm = {
 
 export default function Patients() {
   const { isOwner } = useAuth();
+  const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -191,7 +192,7 @@ export default function Patients() {
                 <td>{formatDate(p.last_visit)}</td>
                 <td>
                   <div className="action-row">
-                    <button className="btn btn-sm">Dispense</button>
+                    <button className="btn btn-sm" onClick={() => navigate(`/pos?patient=${p.id}`)}>Dispense</button>
                     <button className="btn btn-sm" onClick={() => openHistory(p)}>History</button>
                     <button className="btn btn-sm" onClick={() => openEdit(p)}>Edit</button>
                     {isOwner && (
