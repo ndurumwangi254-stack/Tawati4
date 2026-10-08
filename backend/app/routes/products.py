@@ -78,6 +78,7 @@ def create_product():
 
     product = Product(**{k: payload.get(k) for k in PRODUCT_FIELDS if k in payload})
     product.expiry_date = _parse_date(payload.get("expiry_date"))
+    product.manufacture_date = _parse_date(payload.get("manufacture_date"))
     db.session.add(product)
     db.session.flush()  # get product.id before commit
 
@@ -108,6 +109,8 @@ def update_product(product_id):
             setattr(product, field, payload[field])
     if "expiry_date" in payload:
         product.expiry_date = _parse_date(payload["expiry_date"])
+    if "manufacture_date" in payload:
+        product.manufacture_date = _parse_date(payload["manufacture_date"])
     product.updated_at = datetime.utcnow()
 
     # A stock figure changed through the Edit form (e.g. a typo fixed during
