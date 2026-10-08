@@ -53,6 +53,19 @@ export default function Pos() {
     setSearchParams({}, { replace: true });
   }, [products, searchParams, setSearchParams]);
 
+
+  // Arriving from Patients & Records via the Dispense button: pre-select
+  // that patient in the tray instead of leaving it on Walk-in Customer.
+  useEffect(() => {
+    const patientParam = searchParams.get("patient");
+    if (!patientParam || patients.length === 0) return;
+    const target = patients.find((p) => String(p.id) === patientParam);
+    if (target) {
+      setPatientId(target.id);
+    }
+    setSearchParams({}, { replace: true });
+  }, [patients, searchParams, setSearchParams]);
+
   const byType = useMemo(() => {
     if (catalogTab === "all") return products;
     return products.filter((p) => p.product_type === catalogTab);
