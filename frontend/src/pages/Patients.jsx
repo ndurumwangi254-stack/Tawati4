@@ -23,6 +23,11 @@ export default function Patients() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    if (!showForm) setSaveError("");
+  }, [showForm]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [historyFor, setHistoryFor] = useState(null);
@@ -66,21 +71,26 @@ export default function Patients() {
     setShowForm(true);
   };
 
-  const save = async (e) => {
+    const save = async (e) => {
     e.preventDefault();
+    setSaveError("");
     const payload = {
       ...form,
       age: form.age ? Number(form.age) : null,
       allergies: form.allergies.split(",").map((s) => s.trim()).filter(Boolean),
       conditions: form.conditions.split(",").map((s) => s.trim()).filter(Boolean),
     };
-    if (editing) {
-      await api.put(`/patients/${editing.id}`, payload);
-    } else {
-      await api.post("/patients", payload);
+    try {
+      if (editing) {
+        await api.put(`/patients/${editing.id}`, payload);
+      } else {
+        await api.post("/patients", payload);
+      }
+      setShowForm(false);
+      load(search);
+    } catch (err) {
+      setSaveError(err.response?.data?.error || err.message || "Could not save the patient");
     }
-    setShowForm(false);
-    load(search);
   };
 
     const openHistory = (p) => {
@@ -214,6 +224,7 @@ export default function Patients() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editing ? "Edit Patient" : "Register New Patient"}</h2>
             <form onSubmit={save} className="form-grid">
+              {saveError && <div className="alert alert-error span-2">{saveError}</div>}
               <label>Full Name *
                 <input required className="input" value={form.full_name}
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
