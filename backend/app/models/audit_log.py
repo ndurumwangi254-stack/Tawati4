@@ -3,7 +3,7 @@ from datetime import datetime
 from app.models.user import gen_uuid
 from app.extensions import db
 
-MOVEMENT_TYPES = ("initial_intake", "dispensed", "restocked", "adjusted")
+MOVEMENT_TYPES = ("initial_intake", "dispensed", "restocked", "adjusted", "voided")
 
 
 class AuditLog(db.Model):

@@ -1,8 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from app.models.user import gen_uuid
 from app.extensions import db
 
+# Kenya is UTC+3 all year (no daylight saving). "Same day" for voiding is
+# judged on the shop's local calendar day, not the server's UTC day.
+EAT = timezone(timedelta(hours=3))
+
+
+def _eat_date(naive_utc_dt):
+    return naive_utc_dt.replace(tzinfo=timezone.utc).astimezone(EAT).date()
 
 class Sale(db.Model):
     """
@@ -30,6 +37,12 @@ class Sale(db.Model):
     days_of_supply = db.Column(db.Integer, nullable=True)
     refill_due_date = db.Column(db.Date, nullable=True)
 
+    # Void trail: a sale is never edited or deleted, only marked voided.
+    status = db.Column(db.String(10), nullable=False, default="completed", server_default="completed")  # 'completed' | 'voided'
+    voided_at = db.Column(db.DateTime, nullable=True)
+    voided_by = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=True)
+    void_reason = db.Column(db.String(255), nullable=True)
+
     subtotal = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     discount_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     tax_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
@@ -47,13 +60,28 @@ class Sale(db.Model):
     prescriptions = db.relationship("SalePrescription", backref="sale", cascade="all, delete-orphan")
     patient = db.relationship("Patient")
     wholesale_customer = db.relationship("WholesaleCustomer")
-    dispenser = db.relationship("User")
+    dispenser = db.relationship("User", foreign_keys=[user_id])
+    voider = db.relationship("User", foreign_keys=[voided_by])
 
     @property
     def gross_profit(self):
         return float(self.total_amount) - float(self.cogs_total)
 
-    def to_dict(self, role="owner"):
+    def can_be_voided_by(self, user_id, role):
+        """Owner: any sale, any time. Dispenser: only their OWN retail sale,
+        and only on the same (East Africa) calendar day it was made."""
+        if self.status == "voided":
+            return False
+        if role == "owner":
+            return True
+        return (
+            self.sale_channel == "retail"
+            and self.user_id == user_id
+            and self.created_at is not None
+            and _eat_date(self.created_at) == datetime.now(EAT).date()
+        )
+
+    def to_dict(self, role="owner", viewer_id=None):
         data = {
             "id": self.id,
             "receipt_number": self.receipt_number,
@@ -67,6 +95,12 @@ class Sale(db.Model):
             "prescription_ref": self.prescription_ref,
             "days_of_supply": self.days_of_supply,
             "refill_due_date": self.refill_due_date.isoformat() if self.refill_due_date else None,
+            "status": self.status,
+            "voided_at": self.voided_at.isoformat() if self.voided_at else None,
+            "voided_by_name": self.voider.name if self.voider else None,
+            "void_reason": self.void_reason,
+            "dispenser_id": self.user_id,
+            "can_void": self.can_be_voided_by(viewer_id, role) if viewer_id else False,
             "payment_method": self.payment_method,
             "items_count": sum(i.quantity for i in self.items),
             "subtotal": float(self.subtotal),

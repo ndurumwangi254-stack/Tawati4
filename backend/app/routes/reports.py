@@ -11,7 +11,7 @@ reports_bp = Blueprint("reports", __name__)
 @owner_required
 def summary():
     """Owner-only financial rollup: gross sales, COGS, gross profit, basket size."""
-    sales = Sale.query.all()
+    sales = Sale.query.filter_by(status="completed").all()
     gross_sales = sum(float(s.total_amount) for s in sales)
     cogs = sum(float(s.cogs_total) for s in sales)
     gross_profit = gross_sales - cogs
@@ -66,7 +66,7 @@ def top_products():
     from collections import defaultdict
 
     agg = defaultdict(lambda: {"units": 0, "revenue": 0.0, "cogs": 0.0, "name": ""})
-    for sale in Sale.query.all():
+    for sale in Sale.query.filter_by(status="completed").all():
         for item in sale.items:
             key = item.product_id
             agg[key]["units"] += item.quantity

@@ -136,7 +136,7 @@ def create_sale():
     sale.cogs_total = cogs_total
 
     db.session.commit()
-    return jsonify(sale=sale.to_dict(role=current_role())), 201
+    return jsonify(sale=sale.to_dict(role=current_role(), viewer_id=get_jwt_identity())), 201
 
 
 @sales_bp.get("")
@@ -156,7 +156,8 @@ def list_sales():
         query = query.filter_by(sale_channel=channel)
 
     sales = query.order_by(Sale.created_at.desc()).all()
-    return jsonify(sales=[s.to_dict(role=role) for s in sales])
+    viewer_id = get_jwt_identity()
+    return jsonify(sales=[s.to_dict(role=role, viewer_id=viewer_id) for s in sales])
 
 
 @sales_bp.get("/<sale_id>")
@@ -166,4 +167,60 @@ def get_sale(sale_id):
     sale = Sale.query.get_or_404(sale_id)
     if role != "owner" and sale.sale_channel != "retail":
         return jsonify(error="Forbidden"), 403
-    return jsonify(sale=sale.to_dict(role=role))
+    return jsonify(sale=sale.to_dict(role=role, viewer_id=get_jwt_identity()))
+
+@sales_bp.post("/<sale_id>/void")
+@jwt_required()
+def void_sale(sale_id):
+    """
+    Void a sale instead of editing/deleting it, so the record stays honest.
+
+    - Owner: any sale, any time.
+    - Dispenser: only their OWN retail sale, on the same (East Africa) day.
+    The items go back into stock, an audit-log entry is written for each, and
+    the sale is kept on file marked VOID (excluded from reports and stats).
+    """
+    role = current_role()
+    user_id = get_jwt_identity()
+    sale = Sale.query.get_or_404(sale_id)
+
+    if role != "owner" and sale.sale_channel != "retail":
+        return jsonify(error="Forbidden"), 403
+    if sale.status == "voided":
+        return jsonify(error="This sale has already been voided"), 409
+
+    payload = request.get_json(silent=True) or {}
+    reason = (payload.get("reason") or "").strip()
+    if len(reason) < 3:
+        return jsonify(error="A reason for voiding is required"), 400
+
+    if not sale.can_be_voided_by(user_id, role):
+        return jsonify(
+            error="You can only void your own sales, on the day they were made. "
+                  "Ask the owner to void older sales."
+        ), 403
+
+    for item in sale.items:
+        product = item.product
+        if not product:
+            continue
+        before = product.stock_quantity
+        product.stock_quantity = before + item.quantity
+        db.session.add(AuditLog(
+            product_id=product.id,
+            user_id=user_id,
+            movement_type="voided",
+            quantity_delta=item.quantity,
+            balance_before=before,
+            balance_after=product.stock_quantity,
+            reference_code=sale.receipt_number,
+            reason=f"Sale voided: {reason}"[:255],
+        ))
+
+    sale.status = "voided"
+    sale.voided_at = datetime.utcnow()
+    sale.voided_by = user_id
+    sale.void_reason = reason[:255]
+    sale.refill_due_date = None  # a voided sale must never trigger a refill reminder
+    db.session.commit()
+    return jsonify(sale=sale.to_dict(role=role, viewer_id=user_id))

@@ -25,7 +25,7 @@ def _next_patient_code():
 
 
 def _patient_stats(patient_id):
-    sales = Sale.query.filter_by(patient_id=patient_id).all()
+    Sale.query.filter_by(patient_id=patient_id, status="completed").all()
     visits = len(sales)
     amount_spent = sum(float(s.total_amount) for s in sales)
     last_visit = max((s.created_at for s in sales), default=None)
@@ -81,6 +81,8 @@ def patient_dispensing_history(patient_id):
             "prescription_ref": s.prescription_ref,
             "days_of_supply": s.days_of_supply,
             "refill_due_date": s.refill_due_date.isoformat() if s.refill_due_date else None,
+            "status": s.status,
+            "void_reason": s.void_reason,
         }
         for s in sales
     ]
