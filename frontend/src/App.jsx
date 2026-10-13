@@ -13,6 +13,7 @@ import StockAuditLog from "./pages/StockAuditLog";
 import Reports from "./pages/Reports";
 import Wholesale from "./pages/Wholesale";
 import Users from "./pages/Users";
+import Suppliers from "./pages/Suppliers";
 
 function Private({ children, ownerOnly }) {
   return (
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/reports" element={<Private ownerOnly><Reports /></Private>} />
       <Route path="/wholesale" element={<Private ownerOnly><Wholesale /></Private>} />
       <Route path="/users" element={<Private ownerOnly><Users /></Private>} />
+      <Route path="/suppliers" element={<Private ownerOnly><Suppliers /></Private>} />
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
 import { formatKsh, formatDate } from "../utils/format";
@@ -17,6 +17,8 @@ const TABS = [
 export default function Inventory() {
   const { isOwner } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const supplierFilter = searchParams.get("supplier"); // set by "View Inventory" on the Suppliers page
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
@@ -39,6 +41,7 @@ export default function Inventory() {
   const filtered = useMemo(() => {
     let rows = products;
     if (tab !== "all") rows = rows.filter((p) => p.product_type === tab);
+    if (supplierFilter) rows = rows.filter((p) => p.supplier_id === supplierFilter);
     if (search.trim()) {
       const s = search.toLowerCase();
       rows = rows.filter(
@@ -49,7 +52,7 @@ export default function Inventory() {
       );
     }
     return rows;
-  }, [products, tab, search]);
+  }, [products, tab, search, supplierFilter]);
 
   const counts = {
     all: products.length,
@@ -111,6 +114,13 @@ export default function Inventory() {
           )}
         </div>
 
+        {supplierFilter && (
+          <div className="filter-chip">
+            Supplier: <strong>{products.find((p) => p.supplier_id === supplierFilter)?.supplier || "selected supplier"}</strong>
+            <button type="button" onClick={() => setSearchParams({})} title="Show all items">✕</button>
+          </div>
+        )}
+        
         <input
           className="input search-input"
           placeholder="Search medications, shop items, barcode, shelf…"

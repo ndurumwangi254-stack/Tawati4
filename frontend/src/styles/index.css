@@ -902,3 +902,34 @@ input:focus, select:focus, textarea:focus {
   color: #64748b;
   font-size: 0.78rem;
 }
+
+/* ---- Suppliers ---- */
+.supplier-hero {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  background: linear-gradient(135deg, #1e1b4b, #312e81); color: #fff;
+  border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem;
+}
+.supplier-hero h1 { margin: 0 0 0.35rem; font-size: 1.35rem; }
+.supplier-hero p { margin: 0; font-size: 0.85rem; color: #c7d2fe; max-width: 560px; }
+.supplier-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.supplier-toolbar .search-input { flex: 1; min-width: 240px; max-width: none; margin-bottom: 0; }
+.supplier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.supplier-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; display: flex; flex-direction: column; }
+.supplier-card-head { display: flex; justify-content: space-between; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+.supplier-category { font-size: 0.72rem; color: #3730a3; margin-top: 0.15rem; }
+.supplier-details { display: grid; grid-template-columns: 90px 1fr; row-gap: 0.4rem; margin: 0.85rem 0; font-size: 0.82rem; }
+.supplier-details dt { color: var(--muted); }
+.supplier-details dd { margin: 0; word-break: break-word; }
+.supplier-phone { color: #1d4ed8; font-weight: 600; text-decoration: none; }
+.supplier-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.supplier-notes { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+
+/* Supplier picker inside the Add Item form */
+.supplier-picker { display: flex; flex-direction: column; gap: 0.5rem; }
+.supplier-picker-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.85rem; }
+.supplier-picker-actions { display: flex; align-items: center; gap: 0.75rem; }
+.supplier-preview { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.6rem 0.75rem; }
+
+/* "Supplier: X ✕" chip on the Inventory page */
+.filter-chip { display: inline-flex; align-items: center; gap: 0.5rem; background: #e0e7ff; color: #3730a3; border-radius: 999px; padding: 0.25rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem; }
+.filter-chip button { border: none; background: none; cursor: pointer; color: inherit; font-size: 0.85rem; padding: 0; }

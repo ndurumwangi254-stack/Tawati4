@@ -3,13 +3,14 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "./ChangePasswordModal";
 
-const OWNER_ONLY_ITEMS = new Set(["/reports", "/audit-log", "/users"]);
+const OWNER_ONLY_ITEMS = new Set(["/reports", "/audit-log", "/users", "/suppliers"]);
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Welcome Dashboard" },
   { to: "/inventory", label: "Inventory Catalog" },
   { to: "/pos", label: "Dispense & POS" },
   { to: "/patients", label: "Patients & Records" },
+  { to: "/suppliers", label: "Suppliers & Distributors" },
   { to: "/expiry-low-stock", label: "Expiry & Low Stock" },
   { to: "/audit-log", label: "Stock Audit Log" },
   { to: "/reports", label: "Reports & Profit Margins" },

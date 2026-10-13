@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
+import SupplierModal from "./SupplierModal";
 import { isPackForm, unitLabel } from "../utils/format";
 
 const DOSAGE_FORMS = ["Tablets", "Capsules", "Syrup/Suspension", "Inhaler", "Ointment/Cream", "Drops", "Injectable"];
@@ -17,6 +18,7 @@ const BLANK = {
   batch_number: "",
   manufacture_date: "",
   expiry_date: "",
+  supplier_id: "",
   barcode: "",
   stock_quantity: 0,
   min_reorder_level: 0,
@@ -53,6 +55,10 @@ export default function AddItemModal({ onClose, onSaved, product }) {
   const [categories, setCategories] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [suppliers, setSuppliers] = useState([]);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [customSupplier, setCustomSupplier] = useState(false);
+  const [customSupplierName, setCustomSupplierName] = useState("");
 
   const isMedication = form.product_type === "medication";
   const kind = isMedication ? "therapeutic" : "department";
@@ -65,6 +71,11 @@ export default function AddItemModal({ onClose, onSaved, product }) {
     api.get(`/categories?kind=${kind}`).then((res) => setCategories(res.data.categories));
   }, [kind]);
 
+    useEffect(() => {
+    api.get("/suppliers").then((res) => setSuppliers(res.data.suppliers));
+  }, []);
+
+  const selectedSupplier = suppliers.find((s) => s.id === form.supplier_id);
   const set = (field) => (e) => {
     const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setForm((f) => ({ ...f, [field]: value }));
@@ -81,7 +92,15 @@ export default function AddItemModal({ onClose, onSaved, product }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+        setError("");
+    if (!isEditing && !customSupplier && !form.supplier_id) {
+      setError("Please select the supplier who supplied this item.");
+      return;
+    }
+    if (!isEditing && customSupplier && !customSupplierName.trim()) {
+      setError("Please type the supplier's name, or switch back to the list.");
+      return;
+    }
     setSaving(true);
     const body = {
       ...form,
@@ -94,7 +113,16 @@ export default function AddItemModal({ onClose, onSaved, product }) {
       wholesale_unit_price: form.wholesale_unit_price ? Number(form.wholesale_unit_price) : null,
       min_wholesale_qty: form.min_wholesale_qty ? Number(form.min_wholesale_qty) : null,
     };
-    try {
+        try {
+      // "Type Custom": save the typed name as a real supplier first, so it
+      // appears in the dropdown (and on the Suppliers page) from now on.
+      let supplierId = form.supplier_id || null;
+      if (customSupplier && customSupplierName.trim()) {
+        const created = await api.post("/suppliers", { name: customSupplierName.trim() });
+        supplierId = created.data.supplier.id;
+      }
+      body.supplier_id = supplierId;
+
       if (isEditing) {
         await api.put(`/products/${product.id}`, body);
       } else {
@@ -108,7 +136,8 @@ export default function AddItemModal({ onClose, onSaved, product }) {
     }
   };
 
-  return (
+     return (
+    <>
     <div className="modal-backdrop" onClick={onClose}>
       <form className="modal modal-lg" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <div className="modal-header">
@@ -249,6 +278,59 @@ export default function AddItemModal({ onClose, onSaved, product }) {
             </div>
           )}
 
+                    <div className="span-2 supplier-picker">
+            <div className="supplier-picker-head">
+              <span>
+                Supplier {!isEditing && "*"}{" "}
+                <span className="muted small">(from Suppliers dashboard)</span>
+              </span>
+              <span className="supplier-picker-actions">
+                <button type="button" className="btn-link small" onClick={() => setCustomSupplier((c) => !c)}>
+                  {customSupplier ? "Choose from list" : "Type Custom"}
+                </button>
+                <button type="button" className="btn btn-sm" onClick={() => setShowSupplierModal(true)}>
+                  + Add Supplier
+                </button>
+              </span>
+            </div>
+
+            {customSupplier ? (
+              <input
+                value={customSupplierName}
+                onChange={(e) => setCustomSupplierName(e.target.value)}
+                placeholder="Type the supplier's name — it will be saved to your suppliers list"
+              />
+            ) : (
+              <select value={form.supplier_id || ""} onChange={set("supplier_id")}>
+                <option value="">— Select supplier —</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.payment_terms ? ` [${s.payment_terms}]` : ""}
+                    {s.contact_person ? ` • ${s.contact_person}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {!customSupplier && selectedSupplier && (
+              <div className="supplier-preview">
+                <div className="cell-title">
+                  {selectedSupplier.name}{" "}
+                  <span className="badge">
+                    {selectedSupplier.category === "consumer" ? "Consumer & Toiletries" : "Pharmaceuticals"}
+                  </span>
+                </div>
+                <div className="small muted">
+                  Rep: <strong>{selectedSupplier.contact_person || "—"}</strong>
+                  {" · "}Terms: <strong>{selectedSupplier.payment_terms || "—"}</strong>
+                  {selectedSupplier.phone && <> {" · "}📞 {selectedSupplier.phone}</>}
+                  {selectedSupplier.kra_pin && <> {" · "}PIN: {selectedSupplier.kra_pin}</>}
+                </div>
+              </div>
+            )}
+          </div>
+          
           <label>
             {isMedication ? "Dispensary Shelf / Storage Location" : "Aisle / Shelf / Display Rack"}
             <input value={form.shelf_location} onChange={set("shelf_location")} />
@@ -298,7 +380,20 @@ export default function AddItemModal({ onClose, onSaved, product }) {
             {saving ? "Saving…" : isEditing ? "Save Changes" : "Save to Inventory"}
           </button>
         </div>
-      </form>
+           </form>
     </div>
+
+    {showSupplierModal && (
+      <SupplierModal
+        onClose={() => setShowSupplierModal(false)}
+        onSaved={(s) => {
+          setSuppliers((list) => [...list, s].sort((a, b) => a.name.localeCompare(b.name)));
+          setForm((f) => ({ ...f, supplier_id: s.id }));
+          setCustomSupplier(false);
+          setShowSupplierModal(false);
+        }}
+      />
+    )}
+    </>
   );
 }
