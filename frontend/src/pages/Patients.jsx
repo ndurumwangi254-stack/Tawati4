@@ -289,8 +289,11 @@ export default function Patients() {
                 </thead>
                 <tbody>
                   {history.map((h) => (
-                    <tr key={h.sale_id}>
-                      <td>{formatDate(h.date_dispensed)}</td>
+                       <tr key={h.sale_id} className={h.status === "voided" ? "row-voided" : ""}>
+                      <td>
+                        {formatDate(h.date_dispensed)}
+                        {h.status === "voided" && <span className="badge badge-voided" style={{ marginLeft: "0.4rem" }}>VOID</span>}
+                      </td>
                       <td>
                         {h.drugs_dispensed.map((d) => `${d.name} (${d.quantity})`).join(", ")}
                       </td>

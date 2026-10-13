@@ -521,7 +521,18 @@ export default function Pos() {
         </div>
       </div>
 
-      {receipt && <ReceiptModal sale={receipt} onClose={() => setReceipt(null)} />}
+      {receipt && (
+        <ReceiptModal
+          sale={receipt}
+          justCompleted
+          onClose={() => setReceipt(null)}
+          onVoided={(updated) => {
+            setReceipt(updated);
+            // items went back into stock — refresh the catalog's stock counts
+            api.get("/products").then((res) => setProducts(res.data.products));
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
 import Card from "../components/Card";
+import ReceiptModal from "../components/ReceiptModal";
 import { formatKsh } from "../utils/format";
 
 export default function Dashboard() {
@@ -11,8 +12,9 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [valuation, setValuation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState(null);
 
-  useEffect(() => {
+  const load = () => {
     const calls = [api.get("/products"), api.get("/sales")];
     if (isOwner) {
       calls.push(api.get("/reports/summary"));
@@ -27,6 +29,10 @@ export default function Dashboard() {
         if (valuationRes) setValuation(valuationRes.data);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, [isOwner]);
 
   if (loading) return <div className="page-loading">Loading dashboard…</div>;
@@ -78,8 +84,20 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {sales.slice(0, 6).map((s) => (
-              <tr key={s.id}>
-                <td>{s.receipt_number}</td>
+              <tr
+                key={s.id}
+                className={"clickable-row" + (s.status === "voided" ? " row-voided" : "")}
+                onClick={() => setViewing(s)}
+                title="Click to view receipt"
+              >
+                <td>
+                  {s.receipt_number}
+                  {s.status === "voided" && (
+                    <span className="badge badge-voided" style={{ marginLeft: "0.4rem" }}>
+                      VOID
+                    </span>
+                  )}
+                </td>
                 <td>{s.customer_name}</td>
                 <td>{new Date(s.date_time).toLocaleString()}</td>
                 <td>{s.payment_method === "mpesa" ? "M-Pesa / Mobile" : "Cash"}</td>
@@ -95,7 +113,20 @@ export default function Dashboard() {
         </table>
       </div>
 
-      <p className="muted small">Signed in as {user?.name} ({isOwner ? "Owner" : "Dispenser"})</p>
+      {viewing && (
+        <ReceiptModal
+          sale={viewing}
+          onClose={() => setViewing(null)}
+          onVoided={(updated) => {
+            setViewing(updated);
+            load();
+          }}
+        />
+      )}
+
+      <p className="muted small">
+        Signed in as {user?.name} ({isOwner ? "Owner" : "Dispenser"})
+      </p>
     </div>
   );
 }

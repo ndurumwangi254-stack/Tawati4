@@ -8,6 +8,7 @@ const FILTERS = [
   { key: "restocked", label: "Restocked" },
   { key: "adjusted", label: "Adjustments" },
   { key: "initial_intake", label: "Initial Intake" },
+  { key: "voided", label: "Voids" },
 ];
 
 const TYPE_LABEL = {
@@ -15,6 +16,7 @@ const TYPE_LABEL = {
   restocked: "Restocked",
   adjusted: "Adjusted",
   initial_intake: "Initial Intake",
+  voided: "Voided",
 };
 
 export default function StockAuditLog() {

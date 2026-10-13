@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
+import ReceiptModal from "../components/ReceiptModal";
 import { formatKsh, formatDate } from "../utils/format";
 
 export default function Reports() {
@@ -9,6 +10,7 @@ export default function Reports() {
   const [sales, setSales] = useState([]);
   const [channel, setChannel] = useState("");
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -144,9 +146,17 @@ export default function Reports() {
           </thead>
           <tbody>
             {sales.map((s) => (
-              <tr key={s.id}>
+                            <tr
+                key={s.id}
+                className={"clickable-row" + (s.status === "voided" ? " row-voided" : "")}
+                onClick={() => setViewing(s)}
+                title="Click to view receipt"
+              >
                 <td>{formatDate(s.date_time)}</td>
-                <td>{s.receipt_number}</td>
+                <td>
+                  {s.receipt_number}
+                  {s.status === "voided" && <span className="badge badge-voided" style={{ marginLeft: "0.4rem" }}>VOID</span>}
+                </td>
                 <td>{s.customer_name}</td>
                 <td>{s.payment_method === "mpesa" ? "M-Pesa / Mobile" : "Cash"}</td>
                 <td>{s.items_count}</td>
@@ -162,6 +172,13 @@ export default function Reports() {
           </tbody>
         </table>
       </div>
+          {viewing && (
+        <ReceiptModal
+          sale={viewing}
+          onClose={() => setViewing(null)}
+          onVoided={(updated) => { setViewing(updated); load(); }}
+        />
+      )}
     </div>
   );
 }
