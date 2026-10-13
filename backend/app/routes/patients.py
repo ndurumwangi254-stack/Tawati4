@@ -1,5 +1,3 @@
-import itertools
-
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -9,8 +7,6 @@ from app.models.sale import Sale
 from app.utils.decorators import owner_required
 
 patients_bp = Blueprint("patients", __name__)
-
-_code_counter = itertools.count(1001)
 
 
 def _next_patient_code():
@@ -24,16 +20,39 @@ def _next_patient_code():
     return f"TC-PAT-{n}"
 
 
+def _empty_stats():
+    return {"visits": 0, "amount_spent": 0.0, "last_visit": None}
+
+
+def _patient_stats_bulk(patient_ids):
+    """Return {patient_id: stats} using a single query for all patients."""
+    stats = {pid: _empty_stats() for pid in patient_ids}
+    if not patient_ids:
+        return stats
+
+    sales = Sale.query.filter(
+        Sale.patient_id.in_(patient_ids),
+        Sale.status == "completed",
+    ).all()
+
+    last_visits = {}
+    for s in sales:
+        entry = stats[s.patient_id]
+        entry["visits"] += 1
+        entry["amount_spent"] += float(s.total_amount or 0)
+        if s.created_at and (
+            s.patient_id not in last_visits or s.created_at > last_visits[s.patient_id]
+        ):
+            last_visits[s.patient_id] = s.created_at
+
+    for pid, dt in last_visits.items():
+        stats[pid]["last_visit"] = dt.isoformat()
+
+    return stats
+
+
 def _patient_stats(patient_id):
-    Sale.query.filter_by(patient_id=patient_id, status="completed").all()
-    visits = len(sales)
-    amount_spent = sum(float(s.total_amount) for s in sales)
-    last_visit = max((s.created_at for s in sales), default=None)
-    return {
-        "visits": visits,
-        "amount_spent": amount_spent,
-        "last_visit": last_visit.isoformat() if last_visit else None,
-    }
+    return _patient_stats_bulk([patient_id])[patient_id]
 
 
 @patients_bp.get("")
@@ -44,11 +63,15 @@ def list_patients():
     if search:
         like = f"%{search}%"
         query = query.filter(
-            db.or_(Patient.full_name.ilike(like), Patient.phone.ilike(like),
-                   Patient.patient_code.ilike(like))
+            db.or_(
+                Patient.full_name.ilike(like),
+                Patient.phone.ilike(like),
+                Patient.patient_code.ilike(like),
+            )
         )
     patients = query.order_by(Patient.created_at.desc()).all()
-    return jsonify(patients=[p.to_dict(include_stats=_patient_stats(p.id)) for p in patients])
+    stats = _patient_stats_bulk([p.id for p in patients])
+    return jsonify(patients=[p.to_dict(include_stats=stats[p.id]) for p in patients])
 
 
 @patients_bp.get("/<patient_id>")
@@ -57,11 +80,12 @@ def get_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     return jsonify(patient=patient.to_dict(include_stats=_patient_stats(patient.id)))
 
+
 @patients_bp.get("/<patient_id>/history")
 @jwt_required()
 def patient_dispensing_history(patient_id):
     """Date dispensed, drugs dispensed, and refill-due date (if any) for
-    every visit — this is what the Dispenser sees on a patient's record."""
+    every visit - this is what the Dispenser sees on a patient's record."""
     Patient.query.get_or_404(patient_id)  # 404 if the patient doesn't exist
     sales = (
         Sale.query.filter_by(patient_id=patient_id)
@@ -127,8 +151,10 @@ def update_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     payload = request.get_json(silent=True) or {}
 
-    for field in ("full_name", "blood_group", "phone", "gender", "age",
-                  "address", "id_or_insurance_number"):
+    for field in (
+        "full_name", "blood_group", "phone", "gender", "age",
+        "address", "id_or_insurance_number",
+    ):
         if field in payload:
             setattr(patient, field, payload[field])
 
